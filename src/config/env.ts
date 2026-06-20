@@ -36,7 +36,7 @@ export const env = {
   INTERAKT_TEMPLATE_LANG: process.env.INTERAKT_TEMPLATE_LANG || "en",
   // Public image URL for the template's image header (leave blank if the template has no media header).
   INTERAKT_TEMPLATE_HEADER_IMAGE:
-    process.env.INTERAKT_TEMPLATE_HEADER_IMAGE || "https://www.presnag.com/PreSnaglogo.png",
+    process.env.INTERAKT_TEMPLATE_HEADER_IMAGE || "https://www.presnag.com/widex.png",
 };
 
 export const cloudinaryEnabled = Boolean(
