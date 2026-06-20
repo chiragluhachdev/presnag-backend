@@ -13,6 +13,22 @@ import { notifyVendorNewOrder } from "../notifications/orderWhatsapp";
 
 const router = Router();
 
+// Cashfree (and good practice) requires an HTTPS return_url. Prefer a properly
+// configured https CLIENT_URL; otherwise fall back to the request's own origin
+// (the live frontend domain) so a missing/incorrect env var can't break checkout.
+function clientBaseUrl(req: any): string {
+  if (/^https:\/\//i.test(env.CLIENT_URL)) return env.CLIENT_URL.replace(/\/+$/, "");
+  const origin = (req.headers.origin as string) || (req.headers.referer as string) || "";
+  if (/^https:\/\//i.test(origin)) {
+    try {
+      return new URL(origin).origin;
+    } catch {
+      /* fall through */
+    }
+  }
+  return env.CLIENT_URL.replace(/\/+$/, "");
+}
+
 // Mark an order paid + notify the vendor. Atomic + idempotent: the pending→paid
 // flip is a single conditional update, so concurrent verify + webhook calls can
 // never both "win" and double-alert the vendor.
@@ -78,7 +94,7 @@ router.post(
       amount: order.total,
       customerName: order.customerName,
       customerPhone: order.customerPhone,
-      returnUrl: `${env.CLIENT_URL}/order/${order.orderNumber}`,
+      returnUrl: `${clientBaseUrl(req)}/order/${order.orderNumber}`,
       splitVendorId: direct ? vendor.cashfreeVendorId : undefined,
     });
     order.paymentMethod = "CASHFREE";
@@ -144,7 +160,7 @@ router.post(
       amount: order.total,
       customerName: order.customerName,
       customerPhone: order.customerPhone,
-      returnUrl: `${env.CLIENT_URL}/order/${order.orderNumber}`,
+      returnUrl: `${clientBaseUrl(req)}/order/${order.orderNumber}`,
       splitVendorId: direct ? vendor.cashfreeVendorId : undefined,
     });
 
