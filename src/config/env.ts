@@ -37,6 +37,10 @@ export const env = {
   // Public image URL for the template's image header (leave blank if the template has no media header).
   INTERAKT_TEMPLATE_HEADER_IMAGE:
     process.env.INTERAKT_TEMPLATE_HEADER_IMAGE || "https://www.presnag.com/widex.png",
+
+  // ---- Observability ----
+  NODE_ENV: process.env.NODE_ENV || "development",
+  SENTRY_DSN: process.env.SENTRY_DSN || "", // optional — error tracking off unless set
 };
 
 export const cloudinaryEnabled = Boolean(

@@ -203,11 +203,11 @@ export async function getPgOrderStatus(orderId: string): Promise<{ paid: boolean
 }
 
 /* ----------------------------- webhook verify ----------------------------- */
-/** Verify a Cashfree webhook signature (PG signs with the client secret). */
+/** Verify a Cashfree webhook signature (PG signs with the client secret).
+ *  FAILS CLOSED: never accept a webhook unless we can verify it. */
 export function verifyWebhookSignature(rawBody: string, signature?: string, timestamp?: string): boolean {
   const secret = env.CASHFREE_WEBHOOK_SECRET || env.CASHFREE_SECRET_KEY;
-  if (!secret) return true; // demo / unset
-  if (!signature || !timestamp) return false;
+  if (!secret || !signature || !timestamp) return false; // cannot verify → reject
   const expected = crypto
     .createHmac("sha256", secret)
     .update(timestamp + rawBody)

@@ -19,5 +19,8 @@ const notificationSchema = new Schema(
   { timestamps: true }
 );
 
+// The admin Activity feed sorts newest-first — index createdAt to avoid scans.
+notificationSchema.index({ createdAt: -1 });
+
 export type NotificationDoc = InferSchemaType<typeof notificationSchema>;
 export const Notification = model("Notification", notificationSchema);

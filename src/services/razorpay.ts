@@ -65,11 +65,11 @@ export async function getRazorpayOrderPaid(orderId: string): Promise<{ paid: boo
   return { paid, demo: false };
 }
 
-/** Verify a Razorpay webhook signature. */
+/** Verify a Razorpay webhook signature. FAILS CLOSED: never accept a webhook
+ *  unless the secret is configured AND the signature matches. */
 export function verifyRazorpayWebhook(rawBody: string, signature?: string): boolean {
   const secret = env.RAZORPAY_WEBHOOK_SECRET;
-  if (!secret) return true; // demo / unset
-  if (!signature) return false;
+  if (!secret || !signature) return false; // cannot verify → reject
   const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
   return expected === signature;
 }

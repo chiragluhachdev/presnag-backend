@@ -9,6 +9,7 @@ import { asyncH, HttpError } from "../middleware/error";
 import { genOrderNumber, isStoreOpen } from "../utils/helpers";
 import { emitNewOrder, emitOrderStatus } from "../realtime/io";
 import { notifyVendorNewOrder, notifyOrderCancelled } from "../notifications/orderWhatsapp";
+import { orderLimiter } from "../middleware/rateLimiters";
 
 const router = Router();
 
@@ -103,6 +104,7 @@ router.post(
 // Create an order.
 router.post(
   "/orders",
+  orderLimiter,
   asyncH(async (req, res) => {
     const { slug, customerName, customerPhone, note, orderType, items, paymentMethod, couponCode } = req.body;
     if (!slug || !customerName || !customerPhone || !Array.isArray(items) || items.length === 0) {
@@ -164,13 +166,25 @@ router.post(
         isActive: true,
       });
       if (coupon && (!coupon.expiry || coupon.expiry >= new Date())) {
-        discount =
-          coupon.type === "percent"
-            ? Math.round((subtotal * coupon.value) / 100)
-            : Math.min(coupon.value, subtotal);
-        appliedCode = coupon.code;
-        coupon.usedCount += 1;
-        await coupon.save();
+        // Atomically claim one use, honouring usageLimit (0 = unlimited). This
+        // prevents the race where concurrent orders both pass a read-check and
+        // push usedCount past the limit.
+        const claimed = await Coupon.findOneAndUpdate(
+          {
+            _id: coupon._id,
+            isActive: true,
+            $or: [{ usageLimit: 0 }, { $expr: { $lt: ["$usedCount", "$usageLimit"] } }],
+          },
+          { $inc: { usedCount: 1 } },
+          { new: true }
+        );
+        if (claimed) {
+          discount =
+            coupon.type === "percent"
+              ? Math.round((subtotal * coupon.value) / 100)
+              : Math.min(coupon.value, subtotal);
+          appliedCode = coupon.code;
+        }
       }
     }
 

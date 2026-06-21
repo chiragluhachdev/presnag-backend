@@ -76,5 +76,14 @@ const orderSchema = new Schema(
   { timestamps: true }
 );
 
+// Compound indexes for the hot query paths (vendor lists, admin finance,
+// auto-cancel/reconcile crons, settlements). These avoid collection scans and
+// in-memory sorts on createdAt as order volume grows.
+orderSchema.index({ vendorId: 1, status: 1 });
+orderSchema.index({ vendorId: 1, createdAt: -1 });
+orderSchema.index({ paymentStatus: 1, createdAt: 1 });
+orderSchema.index({ status: 1, createdAt: 1 });
+orderSchema.index({ settlementMode: 1, paymentStatus: 1, settlementStatus: 1 });
+
 export type OrderDoc = InferSchemaType<typeof orderSchema>;
 export const Order = model("Order", orderSchema);
