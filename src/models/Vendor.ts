@@ -32,6 +32,8 @@ const vendorSchema = new Schema(
     // Which order types this restaurant offers (shown at customer checkout).
     dineInEnabled: { type: Boolean, default: true },   // "Eat Here"
     takeAwayEnabled: { type: Boolean, default: true },  // "Pick Up"
+    // When true, the logo is not shown to customers (blanked on public endpoints).
+    hideLogo: { type: Boolean, default: false },
     socialLinks: {
       instagram: { type: String, default: "" },
       facebook: { type: String, default: "" },

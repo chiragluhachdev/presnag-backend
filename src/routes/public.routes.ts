@@ -43,12 +43,13 @@ router.get(
     }
 
     const vendors = await Vendor.find(filter)
-      .select("name slug logo banner category isOpen openTime closeTime prepTime address description lat lng createdAt isFeatured featuredOrder")
+      .select("name slug logo banner category isOpen openTime closeTime prepTime address description lat lng createdAt isFeatured featuredOrder hideLogo")
       .lean()
       .sort({ isFeatured: -1, featuredOrder: 1, createdAt: -1 });
 
     const mappedVendors = vendors.map((v) => ({
       ...v,
+      logo: v.hideLogo ? "" : v.logo, // respect the vendor's "hide logo" preference
       isOpen: isStoreOpen(v.isOpen as boolean, v.openTime as string, v.closeTime as string),
     }));
 
@@ -66,6 +67,7 @@ router.get(
       .lean();
     if (!vendor) throw new HttpError(404, "Vendor not found");
 
+    if (vendor.hideLogo) vendor.logo = ""; // respect the vendor's "hide logo" preference
     vendor.isOpen = isStoreOpen(vendor.isOpen as boolean, vendor.openTime as string, vendor.closeTime as string);
     const categories = await MenuCategory.find({ vendorId: vendor._id }).sort({ sortOrder: 1 });
     const items = await MenuItem.find({ vendorId: vendor._id });

@@ -62,6 +62,7 @@ router.put(
       "whatsappOrderAlerts",
       "dineInEnabled",
       "takeAwayEnabled",
+      "hideLogo",
     ];
     const update: Record<string, unknown> = {};
     for (const k of allowed) if (k in req.body) update[k] = req.body[k];
