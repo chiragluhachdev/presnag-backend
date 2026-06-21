@@ -5,7 +5,7 @@ import { notifyOrderCancelled } from "../notifications/orderWhatsapp";
 
 // A new (paid/COD) order the vendor never accepts within this window is
 // automatically declined so the customer isn't left waiting indefinitely.
-export const AUTO_CANCEL_SECONDS = 180;
+export const AUTO_CANCEL_SECONDS = 120;
 
 const AUTO_CANCEL_REASON = "Auto-cancelled — the restaurant didn't respond in time.";
 
@@ -40,9 +40,9 @@ export async function runAutoCancel(): Promise<number> {
   return cancelled;
 }
 
-/** Poll every 15s so an unanswered order is declined within ~15s of its deadline. */
+/** Poll every 10s so an unanswered order is declined within ~10s of its deadline. */
 export function scheduleAutoCancel() {
-  cron.schedule("*/15 * * * * *", async () => {
+  cron.schedule("*/10 * * * * *", async () => {
     try {
       const n = await runAutoCancel();
       if (n) console.log(`[auto-cancel] declined ${n} unanswered order(s)`);
