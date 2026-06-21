@@ -247,6 +247,17 @@ router.post(
 );
 
 // ---- Vendor management ----
+
+// Bulk open/close every shop at once (sets the manual isOpen flag on all vendors).
+router.patch(
+  "/vendors/bulk/open",
+  asyncH(async (req, res) => {
+    const isOpen = req.body.isOpen === true;
+    const result = await Vendor.updateMany({}, { isOpen });
+    res.json({ ok: true, updated: result.modifiedCount, isOpen });
+  })
+);
+
 router.get(
   "/vendors",
   asyncH(async (req, res) => {
