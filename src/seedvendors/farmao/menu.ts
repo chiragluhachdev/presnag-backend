@@ -4,7 +4,7 @@ const u = (id: string, w = 600) =>
 export const menuData = [
   {
     name: "🥟 Momos",
-    image: u("photo-1626804475297-41609ea004eb"),
+    image: u("photo-1769610712810-ec91babfccd3"),
     items: [
       {
         name: "Steamed Veg Momos",
@@ -51,7 +51,7 @@ export const menuData = [
         description: "Crispy fried veggie momos.",
         price: 139,
         isVeg: true,
-        image: u("photo-1534422298391-e4f8c172dddb"),
+        image: u("photo-1638502338747-f7f368214cce"),
         customizations: [],
       },
       {
@@ -59,7 +59,7 @@ export const menuData = [
         description: "Golden fried crunchy paneer momos.",
         price: 80,
         isVeg: true,
-        image: u("photo-1541696432-82c6da8ce7bf"),
+        image: u("photo-1638502521795-89107ac5e246"),
         customizations: [
           {
             id: "grp_size3",

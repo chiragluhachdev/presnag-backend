@@ -126,10 +126,15 @@ router.get(
 router.get(
   "/finance",
   asyncH(async (req, res) => {
-    const { date } = req.query;
-    const day = date ? new Date(String(date)) : new Date();
-    const start = new Date(day); start.setHours(0, 0, 0, 0);
-    const end = new Date(start); end.setDate(end.getDate() + 1);
+    // Accepts a date RANGE (from/to, inclusive). Falls back to a single `date`
+    // and finally to "today" — so older callers keep working.
+    const { from, to, date } = req.query;
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+
+    const startSrc = (from ?? date) ? new Date(String(from ?? date)) : new Date();
+    const endSrc = to ? new Date(String(to)) : (from ? new Date(String(from)) : startSrc);
+    const start = new Date(startSrc); start.setHours(0, 0, 0, 0);
+    const end = new Date(endSrc); end.setHours(0, 0, 0, 0); end.setDate(end.getDate() + 1); // inclusive of `to`
 
     const orders = await Order.find({
       paymentStatus: "paid",
@@ -137,14 +142,16 @@ router.get(
     })
       .populate("vendorId", "name")
       .sort({ createdAt: -1 })
-      .limit(500);
+      .limit(2000);
 
     const rows = orders.map((o) => {
       const vendor: any = o.vendorId;
       return {
         orderNumber: o.orderNumber,
+        vendorId: vendor?._id ? String(vendor._id) : "",
         vendorName: vendor?.name || "—",
         createdAt: o.createdAt,
+        paymentMethod: o.paymentMethod,
         customerPaid: o.total,
         platformFee: platformFee(o.total),
         vendorGets: vendorNet(o.total),
@@ -152,22 +159,45 @@ router.get(
       };
     });
 
-    const sum = (k: "customerPaid" | "platformFee" | "vendorGets") =>
-      Math.round(rows.reduce((s, r) => s + r[k], 0) * 100) / 100;
-    const collection = sum("customerPaid");
-    const platformCommission = sum("platformFee");
-    const vendorPayoutDue = sum("vendorGets");
+    const sum = (list: typeof rows, k: "customerPaid" | "platformFee" | "vendorGets") =>
+      round2(list.reduce((s, r) => s + r[k], 0));
+    const collection = sum(rows, "customerPaid");
+    const platformCommission = sum(rows, "platformFee");
+    const vendorPayoutDue = sum(rows, "vendorGets");
+    const settledRows = rows.filter((r) => r.status === "Paid");
+    const pendingRows = rows.filter((r) => r.status !== "Paid");
+
+    // Per-vendor rollup — sorted by collection so the biggest sellers surface first.
+    const vendorMap = new Map<string, { vendorName: string; orders: number; collection: number; commission: number; payout: number }>();
+    for (const r of rows) {
+      const key = r.vendorId || r.vendorName;
+      const agg = vendorMap.get(key) || { vendorName: r.vendorName, orders: 0, collection: 0, commission: 0, payout: 0 };
+      agg.orders += 1;
+      agg.collection += r.customerPaid;
+      agg.commission += r.platformFee;
+      agg.payout += r.vendorGets;
+      vendorMap.set(key, agg);
+    }
+    const byVendor = [...vendorMap.values()]
+      .map((v) => ({ ...v, collection: round2(v.collection), commission: round2(v.commission), payout: round2(v.payout) }))
+      .sort((a, b) => b.collection - a.collection);
 
     res.json({
-      date: start.toISOString().slice(0, 10),
+      from: start.toISOString().slice(0, 10),
+      to: new Date(end.getTime() - 1).toISOString().slice(0, 10),
+      date: start.toISOString().slice(0, 10), // kept for backward compatibility
       feeRatePct: PLATFORM_FEE_PCT,
       rows,
+      byVendor,
       totals: {
         collection,
         platformCommission,
         vendorPayoutDue,
         netProfit: platformCommission, // PreSnag's commission (gateway costs handled off-platform)
         orders: rows.length,
+        avgOrderValue: rows.length ? round2(collection / rows.length) : 0,
+        settledPayout: sum(settledRows, "vendorGets"),
+        pendingPayout: sum(pendingRows, "vendorGets"),
       },
     });
   })
