@@ -397,6 +397,17 @@ router.delete(
   })
 );
 
+// Permanently delete ONE order (vanishes everywhere — orders, finance, vendor
+// payments/reports are all derived from the Order collection).
+router.delete(
+  "/orders/:id",
+  asyncH(async (req, res) => {
+    const result = await Order.deleteOne({ _id: req.params.id });
+    if (result.deletedCount === 0) throw new HttpError(404, "Order not found");
+    res.json({ ok: true });
+  })
+);
+
 // ---- Order monitoring ----
 router.get(
   "/orders",

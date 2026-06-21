@@ -5,7 +5,7 @@ import { notifyOrderCancelled } from "../notifications/orderWhatsapp";
 
 // A new (paid/COD) order the vendor never accepts within this window is
 // automatically declined so the customer isn't left waiting indefinitely.
-export const AUTO_CANCEL_SECONDS = 60;
+export const AUTO_CANCEL_SECONDS = 180;
 
 const AUTO_CANCEL_REASON = "Auto-cancelled — the restaurant didn't respond in time.";
 
