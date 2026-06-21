@@ -4,5 +4,8 @@ dist
 *.log
 .env.example
 .DS_Store
+
+# Local-only seed scripts & data (not needed at runtime; kept out of the public repo)
 seed.ts
-.env.example
+src/seed.ts
+src/seedvendors/
